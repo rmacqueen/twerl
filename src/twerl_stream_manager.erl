@@ -86,8 +86,11 @@ handle_call(stop, _From, State) ->
     {stop, normal, stopped, State};
 
 handle_call(start_stream, _From, State=#state{client_pid=Pid}) ->
+    io:format("start stream~n", []),
+
     NewPid = case Pid of
                  undefined ->
+                     io:format("starting client connect~n", []),
                      %% not started, start client
                      client_connect(State);
                  _ ->
@@ -225,6 +228,7 @@ client_connect(#state{auth = Auth, params = Params}) ->
     end,
 
     Endpoint = {post, twerl_util:filter_url()},
+    io:format("client connect ~p~n", [Endpoint]),
     spawn_link(fun() ->
         case twerl_stream:connect(Endpoint, Auth, Params, Callback) of
             {error, unauthorised} ->

@@ -15,8 +15,10 @@ connect({post, Url}, Auth, Params, Callback) ->
                           {H, L2} ->
                               {H, L2}
                       end,
+    io:format(" connect params ~p~n", [Params]),
     case catch httpc:request(post, {Url, Headers, ?CONTENT_TYPE, Body}, [], [{sync, false}, {stream, self}]) of
         {ok, RequestId} ->
+            io:format("success connect ~w~n", [RequestId]),
             ?MODULE:handle_connection(Callback, RequestId);
         {error, Reason} ->
             {error, {http_error, Reason}}
@@ -40,13 +42,17 @@ connect({get, BaseUrl}, Auth, Params, Callback) ->
 % TODO maybe change {ok, stream_closed} to an error?
 -spec handle_connection(term(), term()) -> {ok, terminate} | {ok, stream_closed} | {error, term()}.
 handle_connection(Callback, RequestId) ->
+    io:format("handle connection ~w~n", [RequestId]),
     receive
         % stream opened
         {http, {RequestId, stream_start, _Headers}} ->
+            io:format("stream opened ~w~n", [RequestId]),
             handle_connection(Callback, RequestId);
 
         % stream received data
         {http, {RequestId, stream, Data}} ->
+            io:format("stream received data ~p~n", [Data]),
+
             spawn(fun() ->
                 DecodedData = twerl_util:decode(Data),
                 Callback(DecodedData)
@@ -55,6 +61,7 @@ handle_connection(Callback, RequestId) ->
 
         % stream closed
         {http, {RequestId, stream_end, _Headers}} ->
+            io:format("stream closed ~w~n", [RequestId]),
             {ok, stream_end};
 
         % connected but received error cod
